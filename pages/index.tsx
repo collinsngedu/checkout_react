@@ -2,10 +2,42 @@ import { Box, Button, Card, CardContent, FormControl, FormControlLabel, FormLabe
 import { Frames, CardNumber, ExpiryDate, Cvv } from 'frames-react';
 import type { NextPage } from 'next'
 import Router from 'next/router'
+import React from 'react';
 import { useState } from "react";
+import { InferGetStaticPropsType } from 'next'
 
-const Home: NextPage = () => {
+interface paymentdata {
+  id: string
+  scheme: string
+  last4: string
 
+}
+
+export const getStaticProps = async () => {
+  const customerId = "cus_2vrd26w4rcgetj3wx3l47kr32i"
+
+  const reqData = { "data": { "customerId": customerId } }
+
+  const res = await fetch("http://localhost:5001/test-7194e/us-central1/getCustomer", {
+    method: "POST", body: JSON.stringify(reqData), headers: new Headers({
+      'Content-Type': 'application/json'
+    })
+  });
+
+  console.log(res)
+
+  const resJson = await res.json()
+
+
+  return {
+    props: { paymentList: resJson.result.instruments }
+  }
+
+}
+
+
+function Home({ paymentList }: InferGetStaticPropsType<typeof getStaticProps>) {
+  const payments: paymentdata[] = paymentList
   const [paymentMethod, setpaymentMethod] = useState("sofort");
   const [local, setLocal] = useState("de");
   const [name, setName] = useState("");
@@ -17,6 +49,27 @@ const Home: NextPage = () => {
   const localChanger = (event: React.ChangeEvent<HTMLInputElement>, value: string) => {
     setLocal(value)
     resetIframe()
+  }
+
+  const processIdPayment = async () => {
+    const reqData = { "data": { "itemPrice": 300, "insToken": paymentMethod, "customerId": "cus_2vrd26w4rcgetj3wx3l47kr32i" } }
+    const res = await fetch("http://localhost:5001/test-7194e/us-central1/processIdPayment", {
+      method: "POST", body: JSON.stringify(reqData), headers: new Headers({
+        'Content-Type': 'application/json'
+      })
+    });
+    const resJson = await res.json()
+
+    if (resJson.result.status == "Pending") {
+      location.href = resJson.result.redirectLink
+    } else if (resJson.result.status == "Declined") {
+      Router.push("/failed")
+    }
+
+    else {
+      Router.push({ pathname: "/success", query: { token: resJson.result.id } })
+    }
+
   }
 
   const processCardPayment = async (cardToken: string) => {
@@ -56,6 +109,8 @@ const Home: NextPage = () => {
   const resetIframe = () => {
     setFrame(frame + 1);
   }
+
+
 
   return (
     <>
@@ -107,6 +162,11 @@ const Home: NextPage = () => {
           >
             <FormControlLabel value="sofort" control={<Radio />} label="Sofort" />
             <FormControlLabel value="credit-card" control={<Radio />} label="Credit Card" />
+            {
+              payments.map(v => (
+                <FormControlLabel value={v.id} key={v.id} control={<Radio />} label={v.scheme + " " + v.last4} />
+              ))
+            }
           </RadioGroup>
         </FormControl>
 
@@ -154,16 +214,18 @@ const Home: NextPage = () => {
         <Button variant="contained" style={{ backgroundColor: "#8C9E6E" }} onClick={() => {
           if (paymentMethod == "credit-card") {
             Frames.submitCard();
-          } else {
+          } else if (paymentMethod == "sofort") {
             processSofortPayment();
+          } else {
+            processIdPayment()
           }
         }}>Process Payment</Button>
+
       </Box>
 
       <script src="https://cdn.checkout.com/js/framesv2.min.js"></script>
     </>
   )
 }
-
 
 export default Home

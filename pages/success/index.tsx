@@ -40,7 +40,7 @@ const SuccessPage: NextPage = () => {
                 if (resJson.result.status == "refund_success") {
                     alert("Refund Successfully")
                 } else {
-                    throw resJson.error
+                    throw "Request Invaild"
                 }
             }
         } catch (err) {
