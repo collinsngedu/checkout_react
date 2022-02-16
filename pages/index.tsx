@@ -20,7 +20,7 @@ const Home: NextPage = () => {
   }
 
   const processCardPayment = async (cardToken: string) => {
-    const reqData = { "data": { "itemPrice": 30000, "cardToken": cardToken, "cardholderName": name, "email": email } }
+    const reqData = { "data": { "itemPrice": 300, "cardToken": cardToken, "cardholderName": name, "email": email } }
     const res = await fetch("http://localhost:5001/test-7194e/us-central1/processCardPayment", {
       method: "POST", body: JSON.stringify(reqData), headers: new Headers({
         'Content-Type': 'application/json'
@@ -41,7 +41,7 @@ const Home: NextPage = () => {
   }
 
   const processSofortPayment = async () => {
-    const reqData = { "data": { "itemPrice": 30 } }
+    const reqData = { "data": { "itemPrice": 300 } }
     const res = await fetch("http://localhost:5001/test-7194e/us-central1/processSofortPayment", {
       method: "POST", body: JSON.stringify(reqData), headers: new Headers({
         'Content-Type': 'application/json'
